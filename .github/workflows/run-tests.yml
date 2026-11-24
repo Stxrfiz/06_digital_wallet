@@ -1,21 +1,50 @@
-name: Run Tests
+name: Run Pytest Unit Tests
 
+# Enhancement: only run the tests when they are needed.
 on:
+  # 1. Run on pushes to the main branch only, not on every push to every branch.
   push:
+    branches: [main]
+    # 2. Path filter: skip the run when only files that cannot change the
+    #    test result are pushed (for example the README or the test document).
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "requirements.txt"
+      - "pytest.ini"
+      - ".github/workflows/run-tests.yml"
+  # 3. Test feature branches when a pull request into main is opened or updated,
+  #    so code is checked before it is merged.
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "requirements.txt"
+      - "pytest.ini"
+      - ".github/workflows/run-tests.yml"
+  # 4. Allow a manual run from the Actions tab (useful for the demo).
   workflow_dispatch:
+
+# 5. Concurrency: if new commits are pushed while an older run for the same
+#    branch is still running, cancel the older run and only test the latest code.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Check out the repository
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
@@ -23,4 +52,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run pytest
-        run: pytest
+        run: python -m pytest -v

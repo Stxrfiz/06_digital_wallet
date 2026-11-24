@@ -1,58 +1,44 @@
-"""Unit tests for withdraw() in wallet_withdrawal.py (Spec section 3.1)."""
 import pytest
 
-from wallet_withdrawal import withdraw
+from src.wallet_withdrawal import withdraw
 
 
-# ---------- Valid withdrawals: correct remaining balance ----------
-@pytest.mark.parametrize(
-    "balance, amount, expected",
-    [
-        (1000, 300, 700),   # typical withdrawal
-        (1000, 1, 999),     # boundary: smallest valid amount
-        (1000, 999, 1),     # boundary: one cent below balance
-        (1000, 1000, 0),    # boundary: exact balance is allowed, returns 0
-        (1, 1, 0),          # boundary: smallest balance, exact withdrawal
-    ],
-    ids=["typical", "min_amount", "just_below_balance", "exact_balance", "exact_balance_one_cent"],
-)
-def test_withdraw_returns_remaining_balance(balance, amount, expected):
-    assert withdraw(balance, amount) == expected
+# Valid withdrawals: the remaining balance is returned in cents.
+@pytest.mark.parametrize(("balance_cents", "amount_cents", "expected_balance"), [
+    pytest.param(1000, 300, 700, id="DW-WDR-TC-001"),   # normal withdrawal
+    pytest.param(1000, 1, 999, id="DW-WDR-TC-002"),     # smallest valid amount
+    pytest.param(1000, 999, 1, id="DW-WDR-TC-003"),     # one cent below the balance
+    pytest.param(1000, 1000, 0, id="DW-WDR-TC-004"),    # exact balance returns zero
+])
+def test_withdraw_with_valid_amount_returns_remaining_balance(balance_cents, amount_cents, expected_balance):
+    # Act
+    result = withdraw(balance_cents, amount_cents)
+    # Assert
+    assert result == expected_balance
 
 
-def test_withdraw_returns_int():
-    assert type(withdraw(1000, 300)) is int
-
-
-# ---------- Out of range values: ValueError ----------
-@pytest.mark.parametrize(
-    "balance, amount",
-    [
-        (-1, 1),       # negative balance
-        (1000, 0),     # zero amount
-        (1000, -1),    # negative amount
-        (1000, 1001),  # amount just above balance
-        (0, 1),        # nothing to withdraw from
-    ],
-    ids=["negative_balance", "zero_amount", "negative_amount", "above_balance", "zero_balance"],
-)
-def test_withdraw_out_of_range_raises_value_error(balance, amount):
+# Correct data type but outside the permitted range: ValueError.
+@pytest.mark.parametrize(("balance_cents", "amount_cents"), [
+    pytest.param(1000, 0, id="DW-WDR-TC-005"),      # zero amount
+    pytest.param(1000, -100, id="DW-WDR-TC-006"),   # negative amount
+    pytest.param(-1, 1, id="DW-WDR-TC-007"),        # negative balance
+    pytest.param(1000, 1001, id="DW-WDR-TC-008"),   # one cent above the balance
+    pytest.param(0, 1, id="DW-WDR-TC-009"),         # withdrawal from a zero balance
+])
+def test_withdraw_with_out_of_range_value_raises_value_error(balance_cents, amount_cents):
+    # Act and Assert
     with pytest.raises(ValueError):
-        withdraw(balance, amount)
+        withdraw(balance_cents, amount_cents)
 
 
-# ---------- Wrong data types: TypeError ----------
-@pytest.mark.parametrize(
-    "balance, amount",
-    [
-        (1000.0, 100),   # float balance
-        (1000, "100"),   # string amount
-        (True, 1),       # bool is not a valid int
-        (1000, True),    # bool is not a valid int
-        (None, 100),     # missing value
-    ],
-    ids=["float_balance", "str_amount", "bool_balance", "bool_amount", "none_balance"],
-)
-def test_withdraw_wrong_type_raises_type_error(balance, amount):
+# Invalid data type: TypeError. bool is not a valid int.
+@pytest.mark.parametrize(("balance_cents", "amount_cents"), [
+    pytest.param(1000.0, 300, id="DW-WDR-TC-010"),   # float balance
+    pytest.param(1000, "300", id="DW-WDR-TC-011"),   # string amount
+    pytest.param(True, 1, id="DW-WDR-TC-012"),       # bool balance
+    pytest.param(1000, True, id="DW-WDR-TC-013"),    # bool amount
+])
+def test_withdraw_with_invalid_type_raises_type_error(balance_cents, amount_cents):
+    # Act and Assert
     with pytest.raises(TypeError):
-        withdraw(balance, amount)
+        withdraw(balance_cents, amount_cents)

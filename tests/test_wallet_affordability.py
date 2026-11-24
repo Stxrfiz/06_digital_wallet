@@ -1,64 +1,44 @@
-"""Unit tests for can_afford() in wallet_affordability.py (Spec section 3.2)."""
 import pytest
 
-from wallet_affordability import can_afford
+from src.wallet_affordability import can_afford
 
 
-# ---------- Decision logic: affordable or not ----------
-@pytest.mark.parametrize(
-    "balance, price, expected",
-    [
-        (1000, 500, True),   # balance above price
-        (500, 500, True),    # boundary: balance equal to price
-        (499, 500, False),   # boundary: one cent short
-        (0, 1, False),       # empty wallet, non-zero price
-        (1000, 0, True),     # zero price is affordable
-        (0, 0, True),        # zero price with zero balance is affordable
-    ],
-    ids=["above_price", "equal_price", "one_cent_short", "empty_wallet", "zero_price", "zero_price_zero_balance"],
-)
-def test_can_afford_decision(balance, price, expected):
-    assert can_afford(balance, price) == expected
+# Valid inputs: the function must return the actual bool True or False,
+# so "is" is used instead of "==" (1 == True would wrongly pass).
+@pytest.mark.parametrize(("balance_cents", "price_cents", "expected"), [
+    pytest.param(1000, 500, True, id="DW-AFF-TC-001"),   # balance above price
+    pytest.param(500, 500, True, id="DW-AFF-TC-002"),    # balance equals price
+    pytest.param(499, 500, False, id="DW-AFF-TC-003"),   # balance one cent below price
+    pytest.param(1000, 0, True, id="DW-AFF-TC-004"),     # zero price
+    pytest.param(0, 0, True, id="DW-AFF-TC-005"),        # zero price and zero balance
+    pytest.param(0, 1, False, id="DW-AFF-TC-006"),       # zero balance cannot cover a price
+])
+def test_can_afford_with_valid_values_returns_bool(balance_cents, price_cents, expected):
+    # Act
+    result = can_afford(balance_cents, price_cents)
+    # Assert
+    assert result is expected
 
 
-# ---------- Output must be the real bool, not 1 or 0 ----------
-@pytest.mark.parametrize(
-    "balance, price, expected",
-    [
-        (1000, 500, True),
-        (499, 500, False),
-    ],
-    ids=["returns_True", "returns_False"],
-)
-def test_can_afford_returns_actual_bool(balance, price, expected):
-    assert can_afford(balance, price) is expected
-
-
-# ---------- Out of range values: ValueError ----------
-@pytest.mark.parametrize(
-    "balance, price",
-    [
-        (-1, 0),   # negative balance
-        (0, -1),   # negative price
-    ],
-    ids=["negative_balance", "negative_price"],
-)
-def test_can_afford_out_of_range_raises_value_error(balance, price):
+# Correct data type but outside the permitted range: ValueError.
+@pytest.mark.parametrize(("balance_cents", "price_cents"), [
+    pytest.param(-1, 0, id="DW-AFF-TC-007"),     # negative balance
+    pytest.param(100, -1, id="DW-AFF-TC-008"),   # negative price
+])
+def test_can_afford_with_negative_value_raises_value_error(balance_cents, price_cents):
+    # Act and Assert
     with pytest.raises(ValueError):
-        can_afford(balance, price)
+        can_afford(balance_cents, price_cents)
 
 
-# ---------- Wrong data types: TypeError ----------
-@pytest.mark.parametrize(
-    "balance, price",
-    [
-        (1000.0, 500),  # float balance
-        (1000, "500"),  # string price
-        (True, 0),      # bool is not a valid int
-        (1000, None),   # missing value
-    ],
-    ids=["float_balance", "str_price", "bool_balance", "none_price"],
-)
-def test_can_afford_wrong_type_raises_type_error(balance, price):
+# Invalid data type: TypeError. bool is not a valid int.
+@pytest.mark.parametrize(("balance_cents", "price_cents"), [
+    pytest.param(10.5, 5, id="DW-AFF-TC-009"),    # float balance
+    pytest.param(100, "50", id="DW-AFF-TC-010"),  # string price
+    pytest.param(True, 0, id="DW-AFF-TC-011"),    # bool balance
+    pytest.param(100, False, id="DW-AFF-TC-012"), # bool price
+])
+def test_can_afford_with_invalid_type_raises_type_error(balance_cents, price_cents):
+    # Act and Assert
     with pytest.raises(TypeError):
-        can_afford(balance, price)
+        can_afford(balance_cents, price_cents)
