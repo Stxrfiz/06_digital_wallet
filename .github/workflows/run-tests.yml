@@ -52,4 +52,12 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run pytest
-        run: python -m pytest -v
+        # Also write an HTML report; --self-contained-html puts the CSS inside report.html.
+        run: python -m pytest -v --html=report.html --self-contained-html
+
+      - name: Upload HTML test report
+        if: always()   # upload the report even when tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-html-report
+          path: report.html
