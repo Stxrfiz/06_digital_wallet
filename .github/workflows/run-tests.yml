@@ -53,7 +53,8 @@ jobs:
 
       - name: Run pytest
         # Also write an HTML report; --self-contained-html puts the CSS inside report.html.
-        run: python -m pytest -v --html=report.html --self-contained-html
+        # --cov writes a coverage report: a table in the log and an HTML report in htmlcov/
+        run: python -m pytest -v --html=report.html --self-contained-html --cov=src --cov-report=term --cov-report=html
 
       - name: Upload HTML test report
         if: always()   # upload the report even when tests fail
@@ -61,3 +62,10 @@ jobs:
         with:
           name: pytest-html-report
           path: report.html
+
+      - name: Upload HTML coverage report
+        if: always()   # upload the report even when tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html-report
+          path: htmlcov/
